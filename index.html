@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RGB Pro Control - ESP32 智能灯光控制系统</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="brand-header">
+            <div class="brand-logo">RGB Pro Control</div>
+            <div class="brand-slogan">智能灯光控制系统</div>
+        </header>
+        <h1>ESP32 RGB 控制器</h1>
+        
+        <!-- 蓝牙连接区域 -->
+        <div class="section">
+            <h2>蓝牙连接</h2>
+            <button id="connectBtn" class="btn">搜索蓝牙设备</button>
+            <div id="status" class="status">未连接</div>
+            
+            <!-- 波特率设置 -->
+            <div class="control-group">
+                <label>波特率：</label>
+                <select id="baudRateSelect">
+                    <option value="9600">9600</option>
+                    <option value="19200">19200</option>
+                    <option value="38400">38400</option>
+                    <option value="57600">57600</option>
+                    <option value="115200" selected>115200</option>
+                    <option value="230400">230400</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- 控制区域 -->
+        <div class="section">
+            <h2>灯光控制</h2>
+            
+            <!-- 预设效果 -->
+            <div class="control-group">
+                <label>预设效果：</label>
+                <div class="preset-effects">
+                    <button class="effect-preset" data-pattern="heart" data-color="#ff0000" data-animation="breath" data-speed="5">红色爱心呼吸</button>
+                    <button class="effect-preset" data-pattern="rainbow" data-color="#ffffff" data-animation="flow" data-speed="7">彩虹流水</button>
+                    <button class="effect-preset" data-pattern="star" data-color="#ffff00" data-animation="blink" data-speed="3">金色星星闪烁</button>
+                    <button class="effect-preset" data-pattern="wave" data-color="#00ffff" data-animation="fade" data-speed="6">青色波浪渐变</button>
+                </div>
+            </div>
+            
+            <!-- 图案选择 -->
+            <div class="control-group">
+                <label>图案：</label>
+                <select id="patternSelect">
+                    <option value="clear">清空</option>
+                    <option value="heart">爱心</option>
+                    <option value="star">星星</option>
+                    <option value="rainbow">彩虹</option>
+                    <option value="wave">波浪</option>
+                    <option value="smile">笑脸</option>
+                    <option value="arrow">箭头</option>
+                    <option value="chess">棋盘</option>
+                    <option value="custom">自定义</option>
+                </select>
+            </div>
+            
+            <!-- 颜色选择 -->
+            <div class="control-group">
+                <label>颜色：</label>
+                <input type="color" id="colorPickerMain" value="#ff0000">
+            </div>
+            
+            <!-- 动画选择 -->
+            <div class="control-group">
+                <label>动画：</label>
+                <select id="animationSelect">
+                    <option value="static">静态</option>
+                    <option value="fade">渐变</option>
+                    <option value="blink">闪烁</option>
+                    <option value="breath">呼吸</option>
+                    <option value="flow">流水灯</option>
+                    <option value="random">随机闪烁</option>
+                </select>
+            </div>
+            
+            <!-- 速度选择 -->
+            <div class="control-group">
+                <label>速度：</label>
+                <input type="range" id="speedSlider" min="1" max="10" value="5">
+                <span id="speedValue">5</span>
+            </div>
+            
+            <!-- 发送按钮 -->
+            <button id="sendBtn" class="btn btn-primary">发送指令</button>
+        </div>
+        
+        <!-- 对话区域 -->
+        <div class="section">
+            <h2>智能对话</h2>
+            <input type="text" id="chatInput" placeholder="输入指令，如：红色爱心" class="chat-input">
+            <button id="chatBtn" class="btn">发送</button>
+            <div id="chatLog" class="chat-log"></div>
+        </div>
+        
+        <!-- 效果预览 -->
+        <div class="section">
+            <h2>图形编程</h2>
+            <div class="control-group">
+                <button id="fillAllBtn" class="btn">填充所有</button>
+                <button id="clearAllBtn" class="btn">清空所有</button>
+                <button id="sendCustomBtn" class="btn btn-primary">发送自定义图案</button>
+            </div>
+            
+            <!-- 图片上传 -->
+            <div class="control-group">
+                <label>上传图片：</label>
+                <input type="file" id="imageUpload" accept="image/*">
+                <button id="processImageBtn" class="btn">处理图片</button>
+                <div id="imagePreview" class="image-preview"></div>
+            </div>
+            
+            <!-- 网格和颜色控制 -->
+            <div class="grid-color-container">
+                <!-- 预览网格 -->
+                <div class="preview-grid" id="previewGrid">
+                    <!-- 8x8 预览网格 -->
+                    <div class="grid-container">
+                        <div class="grid-row">
+                            <div class="grid-cell" data-x="0" data-y="0"></div>
+                            <div class="grid-cell" data-x="1" data-y="0"></div>
+                            <div class="grid-cell" data-x="2" data-y="0"></div>
+                            <div class="grid-cell" data-x="3" data-y="0"></div>
+                            <div class="grid-cell" data-x="4" data-y="0"></div>
+                            <div class="grid-cell" data-x="5" data-y="0"></div>
+                            <div class="grid-cell" data-x="6" data-y="0"></div>
+                            <div class="grid-cell" data-x="7" data-y="0"></div>
+                        </div>
+                        <div class="grid-row">
+                            <div class="grid-cell" data-x="0" data-y="1"></div>
+                            <div class="grid-cell" data-x="1" data-y="1"></div>
+                            <div class="grid-cell" data-x="2" data-y="1"></div>
+                            <div class="grid-cell" data-x="3" data-y="1"></div>
+                            <div class="grid-cell" data-x="4" data-y="1"></div>
+                            <div class="grid-cell" data-x="5" data-y="1"></div>
+                            <div class="grid-cell" data-x="6" data-y="1"></div>
+                            <div class="grid-cell" data-x="7" data-y="1"></div>
+                        </div>
+                        <div class="grid-row">
+                            <div class="grid-cell" data-x="0" data-y="2"></div>
+                            <div class="grid-cell" data-x="1" data-y="2"></div>
+                            <div class="grid-cell" data-x="2" data-y="2"></div>
+                            <div class="grid-cell" data-x="3" data-y="2"></div>
+                            <div class="grid-cell" data-x="4" data-y="2"></div>
+                            <div class="grid-cell" data-x="5" data-y="2"></div>
+                            <div class="grid-cell" data-x="6" data-y="2"></div>
+                            <div class="grid-cell" data-x="7" data-y="2"></div>
+                        </div>
+                        <div class="grid-row">
+                            <div class="grid-cell" data-x="0" data-y="3"></div>
+                            <div class="grid-cell" data-x="1" data-y="3"></div>
+                            <div class="grid-cell" data-x="2" data-y="3"></div>
+                            <div class="grid-cell" data-x="3" data-y="3"></div>
+                            <div class="grid-cell" data-x="4" data-y="3"></div>
+                            <div class="grid-cell" data-x="5" data-y="3"></div>
+                            <div class="grid-cell" data-x="6" data-y="3"></div>
+                            <div class="grid-cell" data-x="7" data-y="3"></div>
+                        </div>
+                        <div class="grid-row">
+                            <div class="grid-cell" data-x="0" data-y="4"></div>
+                            <div class="grid-cell" data-x="1" data-y="4"></div>
+                            <div class="grid-cell" data-x="2" data-y="4"></div>
+                            <div class="grid-cell" data-x="3" data-y="4"></div>
+                            <div class="grid-cell" data-x="4" data-y="4"></div>
+                            <div class="grid-cell" data-x="5" data-y="4"></div>
+                            <div class="grid-cell" data-x="6" data-y="4"></div>
+                            <div class="grid-cell" data-x="7" data-y="4"></div>
+                        </div>
+                        <div class="grid-row">
+                            <div class="grid-cell" data-x="0" data-y="5"></div>
+                            <div class="grid-cell" data-x="1" data-y="5"></div>
+                            <div class="grid-cell" data-x="2" data-y="5"></div>
+                            <div class="grid-cell" data-x="3" data-y="5"></div>
+                            <div class="grid-cell" data-x="4" data-y="5"></div>
+                            <div class="grid-cell" data-x="5" data-y="5"></div>
+                            <div class="grid-cell" data-x="6" data-y="5"></div>
+                            <div class="grid-cell" data-x="7" data-y="5"></div>
+                        </div>
+                        <div class="grid-row">
+                            <div class="grid-cell" data-x="0" data-y="6"></div>
+                            <div class="grid-cell" data-x="1" data-y="6"></div>
+                            <div class="grid-cell" data-x="2" data-y="6"></div>
+                            <div class="grid-cell" data-x="3" data-y="6"></div>
+                            <div class="grid-cell" data-x="4" data-y="6"></div>
+                            <div class="grid-cell" data-x="5" data-y="6"></div>
+                            <div class="grid-cell" data-x="6" data-y="6"></div>
+                            <div class="grid-cell" data-x="7" data-y="6"></div>
+                        </div>
+                        <div class="grid-row">
+                            <div class="grid-cell" data-x="0" data-y="7"></div>
+                            <div class="grid-cell" data-x="1" data-y="7"></div>
+                            <div class="grid-cell" data-x="2" data-y="7"></div>
+                            <div class="grid-cell" data-x="3" data-y="7"></div>
+                            <div class="grid-cell" data-x="4" data-y="7"></div>
+                            <div class="grid-cell" data-x="5" data-y="7"></div>
+                            <div class="grid-cell" data-x="6" data-y="7"></div>
+                            <div class="grid-cell" data-x="7" data-y="7"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 颜色控制 -->
+                <div class="color-controls">
+                    <h3>颜色控制</h3>
+                    <div class="control-group">
+                        <label>当前颜色：</label>
+                        <input type="color" id="colorPicker" value="#ff0000">
+                        <span id="currentColorValue">#ff0000</span>
+                    </div>
+                    <div class="control-group">
+                        <label>储存颜色：</label>
+                        <div class="color-presets" id="colorPresets">
+                            <!-- 基础颜色 -->
+                            <button class="color-preset" data-color="#ff0000" style="background-color: #ff0000;"></button>
+                            <button class="color-preset" data-color="#00ff00" style="background-color: #00ff00;"></button>
+                            <button class="color-preset" data-color="#0000ff" style="background-color: #0000ff;"></button>
+                            <button class="color-preset" data-color="#ffff00" style="background-color: #ffff00;"></button>
+                            <button class="color-preset" data-color="#ff00ff" style="background-color: #ff00ff;"></button>
+                            <button class="color-preset" data-color="#00ffff" style="background-color: #00ffff;"></button>
+                            <!-- 商业化配色 -->
+                            <button class="color-preset" data-color="#3498db" style="background-color: #3498db;"></button>
+                            <button class="color-preset" data-color="#2ecc71" style="background-color: #2ecc71;"></button>
+                            <button class="color-preset" data-color="#e74c3c" style="background-color: #e74c3c;"></button>
+                            <button class="color-preset" data-color="#f39c12" style="background-color: #f39c12;"></button>
+                            <button class="color-preset" data-color="#9b59b6" style="background-color: #9b59b6;"></button>
+                            <button class="color-preset" data-color="#1abc9c" style="background-color: #1abc9c;"></button>
+                            <button class="color-preset add-color" title="添加当前颜色"><span>+</span></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
