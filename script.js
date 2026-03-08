@@ -976,8 +976,18 @@ class RGBController {
             return;
         }
         
+        // 检测是否为移动设备
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        console.log('设备类型:', isMobile ? '移动设备' : '桌面设备');
+        
         try {
             this.addChatMessage('系统', '正在处理图片...');
+            
+            // 检查文件大小
+            if (file.size > 5 * 1024 * 1024) { // 5MB限制
+                this.addChatMessage('系统', '图片大小超过限制，请选择小于5MB的图片');
+                return;
+            }
             
             // 创建图片元素
             const img = new Image();
@@ -999,9 +1009,12 @@ class RGBController {
                 throw new Error('无法创建画布上下文');
             }
             
-            // 设置临时画布大小为较大尺寸，以便更好地处理图像
-            tempCanvas.width = 64;
-            tempCanvas.height = 64;
+            // 根据设备类型调整处理策略
+            const canvasSize = isMobile ? 32 : 64;
+            tempCanvas.width = canvasSize;
+            tempCanvas.height = canvasSize;
+            
+            console.log('使用画布尺寸:', canvasSize, 'x', canvasSize);
             
             // 禁用图像平滑，保持边缘清晰
             if (tempCtx.imageSmoothingEnabled !== undefined) {
@@ -1009,19 +1022,21 @@ class RGBController {
             }
             
             // 绘制并缩放图片到临时画布
-            tempCtx.drawImage(img, 0, 0, 64, 64);
+            tempCtx.drawImage(img, 0, 0, canvasSize, canvasSize);
             
             // 获取临时画布的像素数据
-            let imageData = tempCtx.getImageData(0, 0, 64, 64);
+            let imageData = tempCtx.getImageData(0, 0, canvasSize, canvasSize);
             let data = imageData.data;
             
             console.log('获取像素数据成功，长度:', data.length);
             
-            // 应用图像增强
+            // 应用图像增强（移动设备上简化处理）
             try {
-                data = this.enhanceImage(data, 64, 64);
-                imageData.data = data;
-                tempCtx.putImageData(imageData, 0, 0);
+                if (!isMobile) {
+                    data = this.enhanceImage(data, canvasSize, canvasSize);
+                    imageData.data = data;
+                    tempCtx.putImageData(imageData, 0, 0);
+                }
             } catch (enhanceError) {
                 console.error('图像增强错误:', enhanceError);
                 // 如果增强失败，继续使用原始数据
@@ -1064,9 +1079,15 @@ class RGBController {
                         const g = data[index + 1];
                         const b = data[index + 2];
                         
-                        // 应用颜色增强
+                        // 应用颜色增强（移动设备上简化处理）
                         try {
-                            const enhancedColor = this.enhanceColor(r, g, b);
+                            let enhancedColor;
+                            if (isMobile) {
+                                // 移动设备上使用简化的颜色处理
+                                enhancedColor = [r, g, b];
+                            } else {
+                                enhancedColor = this.enhanceColor(r, g, b);
+                            }
                             // 设置像素颜色
                             this.pixelColors[y][x] = enhancedColor;
                         } catch (colorError) {
@@ -1090,7 +1111,7 @@ class RGBController {
             
             // 原始图片预览
             const originalImg = document.createElement('div');
-            originalImg.innerHTML = `<p>原始图片:</p><img src="${img.src}" alt="原始图片">`;
+            originalImg.innerHTML = `<p>原始图片:</p><img src="${img.src}" alt="原始图片" style="max-width: 100%; height: auto;">`;
             this.elements.imagePreview.appendChild(originalImg);
             
             // 处理后图片预览
